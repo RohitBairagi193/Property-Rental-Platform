@@ -66,10 +66,20 @@ const Navbar = () => {
           {admin || user ? (
             <div
               onClick={handleProfileClick}
-              className={`w-11 h-11 rounded-full text-white flex items-center justify-center cursor-pointer hover:scale-105 transition ${
+              className={`w-11 h-11 rounded-full text-white overflow-hidden flex items-center justify-center cursor-pointer hover:scale-105 transition ${
                 admin ? "bg-red-600" : "bg-primary-container"
               }`}>
-              {admin ? <ShieldUser size={22} /> : <User size={22} />}
+              {(admin?.photoURL || user?.photoURL) ? (
+                <img
+                  src={admin?.photoURL || user?.photoURL}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : admin ? (
+                <ShieldUser size={22} />
+              ) : (
+                <User size={22} />
+              )}
             </div>
           ) : (
             <button

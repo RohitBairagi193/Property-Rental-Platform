@@ -859,4 +859,11 @@ const properties = [
   },
 ];
 
-export default properties;
+export default properties.map((property) => ({
+  ...property,
+  available: true,
+  owner: "Rohit Bairagi",
+  ownerPhone: "8349248453",
+  ownerEmail: "rohitbairagi255@gmail.com",
+  createdByEmail: "rohitbairagi255@gmail.com",
+}));

@@ -6,6 +6,7 @@ import {
   getDocs,
   orderBy,
   query,
+  setDoc,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -23,7 +24,7 @@ const normalizeProperty = (property) => ({
     : typeof property.feats === "string"
       ? property.feats.split(",").map((item) => item.trim()).filter(Boolean)
       : ["2 BHK", "2 Bath", "1200 sq.ft"],
-  available: property.available !== undefined ? Boolean(property.available) : true,
+  available: true,
   isLiked: Boolean(property.isLiked),
   description: property.description || "",
   amenities: Array.isArray(property.amenities)
@@ -34,6 +35,8 @@ const normalizeProperty = (property) => ({
   owner: property.owner || "Owner",
   ownerPhone: property.ownerPhone || "",
   ownerEmail: property.ownerEmail || "",
+  createdByUid: property.createdByUid || "",
+  createdByEmail: String(property.createdByEmail || "").trim().toLowerCase(),
   memberSince: property.memberSince || "N/A",
   serviceFee: Number(property.serviceFee || 0),
   securityDeposit: Number(property.securityDeposit || 0),
@@ -57,8 +60,13 @@ export async function getPropertiesFromFirebase() {
     return [];
   }
 
-  const q = query(propertiesRef(), orderBy("title", "asc"));
-  const snapshot = await getDocs(q);
+  let snapshot;
+  try {
+    snapshot = await getDocs(query(propertiesRef(), orderBy("title", "asc")));
+  } catch (error) {
+    console.error("Ordered property query failed; loading properties without ordering", error);
+    snapshot = await getDocs(propertiesRef());
+  }
 
   return snapshot.docs.map((docSnap) => ({
     ...normalizeProperty(docSnap.data()),
@@ -89,6 +97,9 @@ export async function deletePropertyFromFirebase(propertyId) {
 export async function addBookingToFirebase(bookingData) {
   if (!isFirebaseConfigured || !db) {
     throw new Error("Firebase is not configured");
+  }
+  if (!bookingData.userId || !bookingData.propertyId || !bookingData.type) {
+    throw new Error("Booking is missing required identity or property details");
   }
 
   const normalized = {
@@ -128,6 +139,36 @@ export async function getAllBookingsFromFirebase() {
   }));
 }
 
+export async function getBookingsForPropertyOwner(userId, userEmail = "") {
+  if (!isFirebaseConfigured || !db || !userId) {
+    return [];
+  }
+
+  const queries = [
+    getDocs(query(bookingsRef(), where("propertyCreatedByUid", "==", userId))),
+  ];
+
+  if (userEmail) {
+    queries.push(
+      getDocs(query(bookingsRef(), where("propertyCreatedByEmail", "==", userEmail))),
+    );
+  }
+
+  let snapshots;
+  try {
+    snapshots = await Promise.all(queries);
+  } catch (error) {
+    console.error("Failed to load property owner bookings", error);
+    return [];
+  }
+  const records = snapshots.flatMap((snapshot) =>
+    snapshot.docs.map((docSnap) => ({ ...docSnap.data(), id: docSnap.id })),
+  );
+
+  return Array.from(new Map(records.map((record) => [record.id, record])).values())
+    .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+}
+
 export async function deleteBookingFromFirebase(bookingId) {
   if (!isFirebaseConfigured || !db || !bookingId) {
     return;
@@ -135,4 +176,19 @@ export async function deleteBookingFromFirebase(bookingId) {
 
   const refToDoc = doc(db, "bookings", bookingId);
   await deleteDoc(refToDoc);
+}
+
+export async function saveAdminPayoutDetails(adminUid, details) {
+  if (!isFirebaseConfigured || !db || !adminUid) {
+    throw new Error("Firebase is not configured");
+  }
+
+  await setDoc(doc(db, "adminPayoutDetails", adminUid), {
+    adminUid,
+    accountHolder: details.accountHolder.trim(),
+    accountNumber: details.accountNumber.trim(),
+    ifsc: details.ifsc.trim().toUpperCase(),
+    bankName: details.bankName.trim(),
+    updatedAt: new Date().toISOString(),
+  });
 }

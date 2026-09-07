@@ -149,12 +149,21 @@ export function subscribeToAuthState(callback) {
 
     const userDoc = await getDoc(doc(db, "users", user.uid));
     const profile = userDoc.exists()
-      ? normalizeUserProfile(userDoc.data(), userDoc.data().role || "Tenant")
+      ? normalizeUserProfile(
+          {
+            ...userDoc.data(),
+            uid: user.uid,
+            email: user.email || userDoc.data().email || "",
+            photoURL: user.photoURL || userDoc.data().photoURL || "",
+          },
+          userDoc.data().role || "Tenant",
+        )
       : normalizeUserProfile(
           {
             uid: user.uid,
             name: user.displayName || "User",
             email: user.email,
+            photoURL: user.photoURL || "",
             role: "Tenant",
             bookings: 0,
             wishlist: 0,

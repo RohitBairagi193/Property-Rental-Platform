@@ -18,7 +18,10 @@ import { useState } from "react";
 import amenityIcons from "../Components/amenityIcons";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { auth } from "../firebase/config";
-import { addBookingToFirebase } from "../firebase/properties";
+import {
+  addBookingToFirebase,
+  getPropertiesFromFirebase,
+} from "../firebase/properties";
 
 const DetailedCard = ({ item }) => {
   const [showPopup, setShowPopup] = useState(false);
@@ -37,23 +40,112 @@ const DetailedCard = ({ item }) => {
  const grandTotal =
    totalRent + parseInt(item.serviceFee) + parseInt(item.securityDeposit);
 
- const saveBookingActivity = async (type) => {
+ const openRazorpayCheckout = async () => {
+     if (!auth?.currentUser) {
+     throw new Error("Please log in to continue.");
+     }
+
+     const platformFee = Math.ceil(grandTotal * 0.02);
+     const amountToCharge = grandTotal + platformFee;
+     const paymentApiUrl = import.meta.env.VITE_PAYMENT_API_URL || "http://localhost:8080";
+     if (!window.Razorpay) {
+       const script = document.createElement("script");
+       script.src = "https://checkout.razorpay.com/v1/checkout.js";
+       script.async = true;
+       document.body.appendChild(script);
+       await new Promise((resolve, reject) => {
+         script.onload = resolve;
+         script.onerror = () => reject(new Error("Razorpay checkout could not load"));
+       });
+     }
+
+     const orderResponse = await fetch(`${paymentApiUrl}/create-order`, {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify({
+         amount: Math.round(amountToCharge * 100),
+         propertyId: String(item.id),
+         userId: auth.currentUser.uid,
+       }),
+     });
+
+     if (!orderResponse.ok) {
+       throw new Error("Could not create Razorpay order");
+     }
+
+     const order = await orderResponse.json();
+     return new Promise((resolve, reject) => {
+       const checkout = new window.Razorpay({
+         key: order.keyId,
+         amount: order.amount,
+         currency: order.currency,
+         name: "GharDhundho",
+         description: item.title,
+         order_id: order.id,
+         prefill: {
+           email: auth.currentUser.email || "",
+         },
+         handler: async (payment) => {
+           try {
+             const verifyResponse = await fetch(`${paymentApiUrl}/verify-payment`, {
+               method: "POST",
+               headers: { "Content-Type": "application/json" },
+               body: JSON.stringify(payment),
+             });
+             const verification = await verifyResponse.json();
+             if (!verifyResponse.ok || !verification.verified) {
+               reject(new Error("Payment verification failed"));
+               return;
+             }
+             resolve(payment);
+           } catch (error) {
+             reject(error);
+           }
+         },
+         modal: {
+           ondismiss: () => reject(new Error("Payment was cancelled")),
+         },
+         theme: { color: "#1f4d3a" },
+       });
+     checkout.open();
+   });
+  };
+
+  const saveBookingActivity = async (type, payment = {}) => {
    if (!auth?.currentUser) {
      alert("Please log in to continue.");
      return false;
    }
 
+   const firebaseProperties = await getPropertiesFromFirebase();
+   const firebaseProperty = firebaseProperties.find(
+     (property) =>
+       String(property.id) === String(item.id) ||
+       (property.title === item.title && property.location === item.location),
+   );
+   const property = firebaseProperty || item;
    const finalCheckInDate = checkInDate || new Date().toISOString().slice(0, 10);
+   const platformFee = type === "booking" ? Math.ceil(grandTotal * 0.02) : 0;
    const bookingRecord = {
      userId: auth.currentUser.uid,
+     userEmail: auth.currentUser.email || "",
      email: auth.currentUser.email || "",
-     title: item.title,
-     location: item.location,
+     propertyId: String(property.id),
+     propertyCreatedByUid: property.createdByUid || "",
+     propertyCreatedByEmail: property.createdByEmail || "",
+     owner: property.owner || "",
+     title: property.title,
+     location: property.location,
      total: grandTotal,
+     platformFee,
+     amountPaid: grandTotal + platformFee,
      renewal: `${duration} Months`,
      visitingdate: finalCheckInDate,
      for_visit: type === "visit" ? " Visit" : " Booking",
      type,
+     paymentId: payment.razorpay_payment_id || "",
+     orderId: payment.razorpay_order_id || "",
+     paymentStatus: type === "booking" ? "verified" : "not_required",
      createdAt: new Date().toISOString(),
    };
 
@@ -79,10 +171,15 @@ const DetailedCard = ({ item }) => {
      return;
    }
 
-   const saved = await saveBookingActivity("booking");
-   if (!saved) return;
-
-   setPopupMessage("Property booked successfully!");
+   try {
+     const payment = await openRazorpayCheckout();
+     const saved = await saveBookingActivity("booking", payment);
+     if (!saved) return;
+     setPopupMessage(`Payment successful (${payment.razorpay_payment_id})`);
+   } catch (error) {
+     alert(error.message || "Payment could not be completed.");
+     return;
+   }
    setShowPopup(true);
    setTimeout(() => setShowPopup(false), 2000);
  };

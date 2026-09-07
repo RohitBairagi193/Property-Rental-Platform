@@ -6,6 +6,7 @@ import Footer from "../Components/Footer";
 import { useLocation } from "react-router-dom";
 import PageLoader from "../Components/PageLoader";
 import usePageLoader from "../assets/usePageLoader";
+import { getPropertiesFromFirebase } from "../firebase/properties";
 
 const Properties = () => {
   const loading = usePageLoader();
@@ -32,7 +33,23 @@ const Properties = () => {
   const [amenities, setAmenities] = useState([]);
 
   useEffect(() => {
-    setAllProperties(defaultProperties);
+    const loadProperties = async () => {
+      try {
+        const firebaseProperties = await getPropertiesFromFirebase();
+        const firebaseKeys = new Set(
+          firebaseProperties.map((property) => `${property.title}|${property.location}`),
+        );
+        const fallbackProperties = defaultProperties.filter(
+          (property) => !firebaseKeys.has(`${property.title}|${property.location}`),
+        );
+        setAllProperties([...fallbackProperties, ...firebaseProperties]);
+      } catch (error) {
+        console.error("Failed to load Firebase properties", error);
+        setAllProperties(defaultProperties);
+      }
+    };
+
+    loadProperties();
   }, []);
 
   const propertiesPerPage = 6;

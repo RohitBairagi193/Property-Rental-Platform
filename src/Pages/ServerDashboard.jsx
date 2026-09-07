@@ -22,6 +22,7 @@ import {
   deletePropertyFromFirebase,
   getAllBookingsFromFirebase,
   getPropertiesFromFirebase,
+  updatePropertyInFirebase,
 } from "../firebase/properties";
 
 const SERVER_ACCOUNT_EMAIL = "rohitbairagi255@gmail.com";
@@ -37,6 +38,7 @@ const ServerDashbord = () => {
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
   const [popupType, setPopupType] = useState("success");
+  const [editId, setEditId] = useState(null);
   const [newProperty, setNewProperty] = useState({
     type: "",
     title: "",
@@ -130,6 +132,8 @@ const ServerDashbord = () => {
       owner: newProperty.owner,
       ownerPhone: newProperty.ownerPhone,
       ownerEmail: newProperty.ownerEmail,
+      createdByUid: serverUser.uid,
+      createdByEmail: serverUser.email,
       memberSince: newProperty.memberSince,
       serviceFee: Number(newProperty.serviceFee || 0),
       securityDeposit: Number(newProperty.securityDeposit || 0),
@@ -171,6 +175,54 @@ const ServerDashbord = () => {
       showPopup("Property deleted successfully", "success");
     } catch (error) {
       showPopup(error.message || "Property could not be deleted", "error");
+    }
+  };
+
+  const handleEditProperty = (property) => {
+    setEditId(property.id);
+    setNewProperty({
+      type: property.type,
+      title: property.title,
+      price: property.price,
+      location: property.location,
+      image: property.image,
+      feats: property.feats.join(", "),
+      description: property.description,
+      amenities: property.amenities.join(", "),
+      owner: property.owner,
+      ownerPhone: property.ownerPhone || "",
+      ownerEmail: property.ownerEmail || "",
+      memberSince: property.memberSince,
+      serviceFee: property.serviceFee,
+      securityDeposit: property.securityDeposit,
+    });
+    setActiveTab("Add Property");
+  };
+
+  const handleUpdateProperty = async () => {
+    const item = properties.find((property) => property.id === editId);
+    if (!item) return;
+
+    const updatedProperty = {
+      ...item,
+      ...newProperty,
+      id: item.id,
+      price: Number(newProperty.price || item.price),
+      serviceFee: Number(newProperty.serviceFee || item.serviceFee),
+      securityDeposit: Number(newProperty.securityDeposit || item.securityDeposit),
+      feats: newProperty.feats.split(",").map((value) => value.trim()).filter(Boolean),
+      amenities: newProperty.amenities.split(",").map((value) => value.trim()).filter(Boolean),
+    };
+
+    try {
+      await updatePropertyInFirebase(item.id, updatedProperty);
+      setProperties((prev) => prev.map((property) =>
+        property.id === item.id ? updatedProperty : property,
+      ));
+      setEditId(null);
+      showPopup("Property updated successfully", "success");
+    } catch (error) {
+      showPopup(error.message || "Property could not be updated", "error");
     }
   };
 
@@ -289,8 +341,13 @@ const ServerDashbord = () => {
                         )}
                       </div>
                       <button
+                        onClick={() => handleEditProperty(property)}
+                        className="btn btn-primary w-full mt-4">
+                        Edit Property
+                      </button>
+                      <button
                         onClick={() => handleDeleteProperty(property.id)}
-                        className="btn btn-secondary w-full mt-4">
+                        className="btn btn-secondary w-full mt-2">
                         <Trash2 size={18} className="inline mr-2" />
                         Delete Property
                       </button>
@@ -407,9 +464,11 @@ const ServerDashbord = () => {
                   }
                 />
 
-                <button onClick={handleAddProperty} className="btn btn-primary w-full">
+                <button
+                  onClick={editId ? handleUpdateProperty : handleAddProperty}
+                  className="btn btn-primary w-full">
                   <PlusCircle size={18} className="inline mr-2" />
-                  Add Property as Server
+                  {editId ? "Update Property as Server" : "Add Property as Server"}
                 </button>
               </div>
             </div>
