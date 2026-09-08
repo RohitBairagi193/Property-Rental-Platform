@@ -21,6 +21,18 @@ Endpoints:
 - `POST /verify-payment`
 
 Firebase Spark hosting cannot run this Node server. Deploy this folder to
-Vercel, Render, or Railway, then use its HTTPS URL from the frontend. For
-Vercel, add `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and
-`ALLOWED_ORIGINS` as project environment variables.
+Vercel, Render, or Railway, then use its HTTPS URL from the frontend.
+
+For Vercel:
+
+1. Create a Vercel project with `payment-server` as its Root Directory.
+2. Add `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `ALLOWED_ORIGINS` as
+   Vercel environment variables. `ALLOWED_ORIGINS` must include the deployed
+   Firebase Hosting URL.
+3. Deploy from the repository root with `npm run deploy:payment`, or deploy
+   from the `payment-server` directory with `npx vercel --prod`.
+4. Set the resulting HTTPS project URL as the frontend
+   `VITE_PAYMENT_API_URL` value before building Firebase Hosting.
+
+The Vercel function exposes `/health`, `/create-order`, and `/verify-payment`
+through the same Express app.

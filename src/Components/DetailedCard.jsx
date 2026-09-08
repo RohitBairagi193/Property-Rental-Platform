@@ -38,7 +38,7 @@ const DetailedCard = ({ item }) => {
 
  const totalRent = parseInt(item.price) * duration;
  const grandTotal =
-   totalRent + parseInt(item.serviceFee) + parseInt(item.securityDeposit);
+   totalRent + Number(item.serviceFee || 0) + Number(item.securityDeposit || 0);
 
  const openRazorpayCheckout = async () => {
      if (!auth?.currentUser) {
@@ -47,7 +47,12 @@ const DetailedCard = ({ item }) => {
 
      const platformFee = Math.ceil(grandTotal * 0.02);
      const amountToCharge = grandTotal + platformFee;
-     const paymentApiUrl = import.meta.env.VITE_PAYMENT_API_URL || "http://localhost:8080";
+     const paymentApiUrl = (
+       import.meta.env.VITE_PAYMENT_API_URL || "http://localhost:8080"
+     ).replace(/\/+$/, "");
+     if (!Number.isFinite(grandTotal) || grandTotal <= 0) {
+       throw new Error("This property has an invalid booking amount.");
+     }
      if (!window.Razorpay) {
        const script = document.createElement("script");
        script.src = "https://checkout.razorpay.com/v1/checkout.js";
@@ -70,7 +75,8 @@ const DetailedCard = ({ item }) => {
      });
 
      if (!orderResponse.ok) {
-       throw new Error("Could not create Razorpay order");
+       const errorBody = await orderResponse.json().catch(() => ({}));
+       throw new Error(errorBody.error || "Could not create Razorpay order");
      }
 
      const order = await orderResponse.json();
@@ -132,7 +138,8 @@ const DetailedCard = ({ item }) => {
      email: auth.currentUser.email || "",
      propertyId: String(property.id),
      propertyCreatedByUid: property.createdByUid || "",
-     propertyCreatedByEmail: property.createdByEmail || "",
+     propertyCreatedByEmail: String(property.createdByEmail || "").trim().toLowerCase(),
+     propertyOwnerEmail: String(property.ownerEmail || "").trim().toLowerCase(),
      owner: property.owner || "",
      title: property.title,
      location: property.location,
@@ -148,6 +155,9 @@ const DetailedCard = ({ item }) => {
      paymentStatus: type === "booking" ? "verified" : "not_required",
      createdAt: new Date().toISOString(),
    };
+   if (!Number.isFinite(bookingRecord.amountPaid) || bookingRecord.amountPaid <= 0) {
+     throw new Error("Booking amount is invalid.");
+   }
 
    try {
      await addBookingToFirebase(bookingRecord);

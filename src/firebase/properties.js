@@ -144,23 +144,31 @@ export async function getBookingsForPropertyOwner(userId, userEmail = "") {
     return [];
   }
 
-  const queries = [
-    getDocs(query(bookingsRef(), where("propertyCreatedByUid", "==", userId))),
+  const normalizedEmail = String(userEmail || "").trim().toLowerCase();
+  const snapshots = [];
+  const ownerQueries = [
+    ["UID", query(bookingsRef(), where("propertyCreatedByUid", "==", userId))],
   ];
 
-  if (userEmail) {
-    queries.push(
-      getDocs(query(bookingsRef(), where("propertyCreatedByEmail", "==", userEmail))),
-    );
+  if (normalizedEmail) {
+    ownerQueries.push([
+      "creator email",
+      query(bookingsRef(), where("propertyCreatedByEmail", "==", normalizedEmail)),
+    ]);
+    ownerQueries.push([
+      "property owner email",
+      query(bookingsRef(), where("propertyOwnerEmail", "==", normalizedEmail)),
+    ]);
   }
 
-  let snapshots;
-  try {
-    snapshots = await Promise.all(queries);
-  } catch (error) {
-    console.error("Failed to load property owner bookings", error);
-    return [];
+  for (const [identifier, ownerQuery] of ownerQueries) {
+    try {
+      snapshots.push(await getDocs(ownerQuery));
+    } catch (error) {
+      console.error(`Failed to load property owner bookings by ${identifier}`, error);
+    }
   }
+
   const records = snapshots.flatMap((snapshot) =>
     snapshot.docs.map((docSnap) => ({ ...docSnap.data(), id: docSnap.id })),
   );

@@ -13,6 +13,11 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+const trustedOrigins = new Set([
+  ...allowedOrigins,
+  "https://ghardhundho-1600e.web.app",
+  "https://ghardhundho-1600e.firebaseapp.com",
+]);
 
 if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
   throw new Error("RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are required");
@@ -25,7 +30,7 @@ const razorpay = new Razorpay({
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+    if (!origin || trustedOrigins.has(origin)) {
       callback(null, true);
       return;
     }

@@ -24,6 +24,7 @@ import {
   getPropertiesFromFirebase,
   updatePropertyInFirebase,
 } from "../firebase/properties";
+import { uploadPropertyImage } from "../supabase/storage";
 
 const SERVER_ACCOUNT_EMAIL = "rohitbairagi255@gmail.com";
 
@@ -45,6 +46,7 @@ const ServerDashbord = () => {
     price: "",
     location: "",
     image: "",
+    imageFile: null,
     feats: "",
     description: "",
     amenities: "",
@@ -111,15 +113,23 @@ const ServerDashbord = () => {
       return;
     }
 
+    let imageUrl = newProperty.image;
+    try {
+      if (newProperty.imageFile) {
+        imageUrl = await uploadPropertyImage(newProperty.imageFile);
+      }
+    } catch (error) {
+      showPopup(error.message || "Image could not be uploaded", "error");
+      return;
+    }
+
     const property = {
       id: Date.now(),
       type: newProperty.type,
       title: newProperty.title,
       price: Number(newProperty.price),
       location: newProperty.location,
-      image:
-        newProperty.image ||
-        "https://images.unsplash.com/photo-1494526585095-c41746248156",
+      image: imageUrl || "https://images.unsplash.com/photo-1494526585095-c41746248156",
       feats: newProperty.feats
         ? newProperty.feats.split(",").map((item) => item.trim()).filter(Boolean)
         : ["2 BHK", "2 Bath", "1200 sq.ft"],
@@ -153,6 +163,7 @@ const ServerDashbord = () => {
       price: "",
       location: "",
       image: "",
+      imageFile: null,
       feats: "",
       description: "",
       amenities: "",
@@ -213,8 +224,12 @@ const ServerDashbord = () => {
       feats: newProperty.feats.split(",").map((value) => value.trim()).filter(Boolean),
       amenities: newProperty.amenities.split(",").map((value) => value.trim()).filter(Boolean),
     };
+    delete updatedProperty.imageFile;
 
     try {
+      if (newProperty.imageFile) {
+        updatedProperty.image = await uploadPropertyImage(newProperty.imageFile);
+      }
       await updatePropertyInFirebase(item.id, updatedProperty);
       setProperties((prev) => prev.map((property) =>
         property.id === item.id ? updatedProperty : property,
@@ -451,6 +466,21 @@ const ServerDashbord = () => {
                     }
                   />
                 ))}
+
+                <label className="block text-sm text-on-surface-variant">
+                  Upload property image (Supabase)
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="input mt-2"
+                    onChange={(event) =>
+                      setNewProperty({
+                        ...newProperty,
+                        imageFile: event.target.files?.[0] || null,
+                      })
+                    }
+                  />
+                </label>
 
                 <textarea
                   placeholder="Description"

@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "deploy": "firebase deploy --only hosting",
+    "deploy:payment": "npx vercel --cwd payment-server",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -13,6 +15,7 @@
     "@dataconnect/generated": "file:src/dataconnect-generated",
     "@lottiefiles/dotlottie-react": "^0.19.2",
     "@lottiefiles/dotlottie-web": "^0.72.1",
+    "@supabase/supabase-js": "^2.115.0",
     "@tailwindcss/vite": "^4.2.4",
     "firebase": "^12.18.0",
     "lottie-react": "^2.4.1",

@@ -16,6 +16,7 @@ service cloud.firestore {
           resource.data.userId == request.auth.uid
           || resource.data.propertyCreatedByUid == request.auth.uid
           || resource.data.propertyCreatedByEmail == request.auth.token.email
+          || resource.data.propertyOwnerEmail == request.auth.token.email
           || request.auth.token.email == "rohitbairagi255@gmail.com"
         );
     }

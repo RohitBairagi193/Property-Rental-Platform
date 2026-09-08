@@ -30,6 +30,7 @@ import {
   updatePropertyInFirebase,
   saveAdminPayoutDetails,
 } from "../firebase/properties";
+import { uploadPropertyImage } from "../supabase/storage";
 
 const AdminDashboard = () => {
   const loading = usePageLoader();
@@ -55,6 +56,7 @@ const AdminDashboard = () => {
     price: "",
     location: "",
     image: "",
+    imageFile: null,
     feats: "",
     description: "",
     amenities: "",
@@ -138,6 +140,9 @@ const AdminDashboard = () => {
 
     try {
       let imageUrl = newProperty.image || "";
+      if (newProperty.imageFile) {
+        imageUrl = await uploadPropertyImage(newProperty.imageFile);
+      }
 
       const property = {
         id: Date.now(),
@@ -176,6 +181,7 @@ const AdminDashboard = () => {
         price: "",
         location: "",
         image: "",
+        imageFile: null,
         feats: "",
         description: "",
         amenities: "",
@@ -200,7 +206,9 @@ const AdminDashboard = () => {
 
     try {
       let imageUrl = item.image;
-      if (newProperty.image) {
+      if (newProperty.imageFile) {
+        imageUrl = await uploadPropertyImage(newProperty.imageFile);
+      } else if (newProperty.image) {
         imageUrl = newProperty.image;
       }
 
@@ -219,6 +227,7 @@ const AdminDashboard = () => {
           ? newProperty.amenities.split(",").map((i) => i.trim()).filter(Boolean)
           : item.amenities,
       };
+      delete updatedProperty.imageFile;
 
       setProperties((prev) =>
         prev.map((property) =>
@@ -237,6 +246,7 @@ const AdminDashboard = () => {
         price: "",
         location: "",
         image: "",
+        imageFile: null,
         feats: "",
         description: "",
         amenities: "",
@@ -629,6 +639,20 @@ const AdminDashboard = () => {
                       setNewProperty({ ...newProperty, image: e.target.value })
                     }
                   />
+                  <label className="block text-sm text-on-surface-variant">
+                    Upload property image (Supabase)
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="input mt-2"
+                      onChange={(event) =>
+                        setNewProperty({
+                          ...newProperty,
+                          imageFile: event.target.files?.[0] || null,
+                        })
+                      }
+                    />
+                  </label>
                 </div>
 
                 <textarea
