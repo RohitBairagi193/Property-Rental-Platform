@@ -1,0 +1,22 @@
+{
+  "name": "ghardhundho-payment-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "postinstall": "prisma skills sync || exit 0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "razorpay": "^2.9.6"
+  },
+  "devDependencies": {
+    "prisma": "^8.0.0-rc.13"
+  }
+}

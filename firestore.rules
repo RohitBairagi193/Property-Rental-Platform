@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == userId;
+    }
+
+    match /bookings/{bookingId} {
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+
+      allow read, delete: if request.auth != null
+        && (
+          resource.data.userId == request.auth.uid
+          || resource.data.propertyCreatedByUid == request.auth.uid
+          || resource.data.propertyCreatedByEmail == request.auth.token.email
+          || resource.data.propertyOwnerEmail == request.auth.token.email
+          || request.auth.token.email == "rohitbairagi255@gmail.com"
+        );
+    }
+
+    match /properties/{propertyId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.createdByUid == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && (
+          resource.data.createdByUid == request.auth.uid
+          || request.auth.token.email == "rohitbairagi255@gmail.com"
+        );
+    }
+
+    match /adminPayoutDetails/{adminUid} {
+      allow read, write: if request.auth != null
+        && (
+          request.auth.token.email == "rohitbairagi255@gmail.com"
+          || adminUid == request.auth.uid
+        );
+    }
+  }
+}
