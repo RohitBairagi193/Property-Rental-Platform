@@ -630,20 +630,11 @@ const AdminDashboard = () => {
                 ))}
 
                 <div className="space-y-2">
-                  <input
-                    type="text"
-                    placeholder="Image URL"
-                    className="input"
-                    value={newProperty.image}
-                    onChange={(e) =>
-                      setNewProperty({ ...newProperty, image: e.target.value })
-                    }
-                  />
                   <label className="block text-sm text-on-surface-variant">
-                    Upload property image (Supabase)
                     <input
                       type="file"
                       accept="image/*"
+                      placeholder="Upload property image"
                       className="input mt-2"
                       onChange={(event) =>
                         setNewProperty({
