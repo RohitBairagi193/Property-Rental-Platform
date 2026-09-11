@@ -3,7 +3,8 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDocs,
+  getDocs, 
+  onSnapshot,
   orderBy,
   query,
   setDoc,
@@ -74,6 +75,45 @@ export async function getPropertiesFromFirebase() {
   }));
 }
 
+// Real-time listener for the properties collection. Fires `onChange` with
+// the fresh, normalized list immediately whenever ANY client adds, edits or
+// deletes a property — no manual page refresh needed on the live site.
+// Returns an unsubscribe function; call it in the component's cleanup.
+export function subscribeToProperties(onChange, onError) {
+  if (!isFirebaseConfigured || !db) {
+    onChange([]);
+    return () => {};
+  }
+
+  const handleSnapshot = (snapshot) => {
+    const properties = snapshot.docs.map((docSnap) => ({
+      ...normalizeProperty(docSnap.data()),
+      id: docSnap.id,
+    }));
+    onChange(properties);
+  };
+
+  const handleError = (error) => {
+    console.error("Realtime property listener failed; falling back to ordering-free listener", error);
+    // If the ordered query fails (e.g. missing index), fall back to an
+    // unordered live listener instead of giving up on realtime updates.
+    return onSnapshot(propertiesRef(), handleSnapshot, (fallbackError) => {
+      console.error("Realtime property listener failed", fallbackError);
+      if (onError) onError(fallbackError);
+    });
+  };
+
+  let unsubscribe = onSnapshot(
+    query(propertiesRef(), orderBy("title", "asc")),
+    handleSnapshot,
+    (error) => {
+      unsubscribe = handleError(error);
+    },
+  );
+
+  return () => unsubscribe();
+}
+
 export async function updatePropertyInFirebase(propertyId, propertyData) {
   if (!isFirebaseConfigured || !db) {
     throw new Error("Firebase is not configured");
@@ -137,6 +177,106 @@ export async function getBookingsForUser(userId) {
       id: docSnap.id,
     }))
     .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+}
+
+// Real-time listener for a single user's bookings (UserDashboard).
+export function subscribeToBookingsForUser(userId, onChange) {
+  if (!isFirebaseConfigured || !db || !userId) {
+    onChange([]);
+    return () => {};
+  }
+
+  const q = query(bookingsRef(), where("userId", "==", userId));
+  const unsubscribe = onSnapshot(
+    q,
+    (snapshot) => {
+      const bookings = snapshot.docs
+        .map((docSnap) => ({ ...docSnap.data(), id: docSnap.id }))
+        .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+      onChange(bookings);
+    },
+    (error) => {
+      console.error("Realtime bookings listener failed", error);
+      onChange([]);
+    },
+  );
+
+  return unsubscribe;
+}
+
+// Real-time listener for ALL bookings (ServerDashboard / super-admin view).
+export function subscribeToAllBookings(onChange) {
+  if (!isFirebaseConfigured || !db) {
+    onChange([]);
+    return () => {};
+  }
+
+  const unsubscribe = onSnapshot(
+    query(bookingsRef(), orderBy("createdAt", "desc")),
+    (snapshot) => {
+      onChange(snapshot.docs.map((docSnap) => ({ ...docSnap.data(), id: docSnap.id })));
+    },
+    (error) => {
+      console.error("Realtime all-bookings listener failed", error);
+      onChange([]);
+    },
+  );
+
+  return unsubscribe;
+}
+
+// Real-time listener for bookings that belong to a property owner's listings
+// (AdminDashboard). Mirrors getBookingsForPropertyOwner's multi-query merge,
+// but keeps each query live instead of fetching once.
+export function subscribeToBookingsForPropertyOwner(userId, userEmail, onChange) {
+  if (!isFirebaseConfigured || !db || !userId) {
+    onChange([]);
+    return () => {};
+  }
+
+  const normalizedEmail = String(userEmail || "").trim().toLowerCase();
+  const resultsByQuery = new Map();
+
+  const emit = () => {
+    const merged = Array.from(resultsByQuery.values()).flat();
+    const deduped = Array.from(new Map(merged.map((record) => [record.id, record])).values()).sort(
+      (a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")),
+    );
+    onChange(deduped);
+  };
+
+  const queries = [["uid", query(bookingsRef(), where("propertyCreatedByUid", "==", userId))]];
+
+  if (normalizedEmail) {
+    queries.push([
+      "creatorEmail",
+      query(bookingsRef(), where("propertyCreatedByEmail", "==", normalizedEmail)),
+    ]);
+    queries.push([
+      "ownerEmail",
+      query(bookingsRef(), where("propertyOwnerEmail", "==", normalizedEmail)),
+    ]);
+  }
+
+  const unsubscribers = queries.map(([key, ownerQuery]) =>
+    onSnapshot(
+      ownerQuery,
+      (snapshot) => {
+        resultsByQuery.set(
+          key,
+          snapshot.docs.map((docSnap) => ({ ...docSnap.data(), id: docSnap.id })),
+        );
+        emit();
+      },
+      (error) => {
+        console.error(`Realtime owner-bookings listener (${key}) failed`, error);
+        resultsByQuery.set(key, []);
+        emit();
+      },
+    ),
+  );
+
+  return () => unsubscribers.forEach((unsub) => unsub());
 }
 
 export async function getAllBookingsFromFirebase() {

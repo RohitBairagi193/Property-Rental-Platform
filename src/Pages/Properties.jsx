@@ -6,7 +6,7 @@ import Footer from "../Components/Footer";
 import { useLocation } from "react-router-dom";
 import PageLoader from "../Components/PageLoader";
 import usePageLoader from "../assets/usePageLoader";
-import { getPropertiesFromFirebase } from "../firebase/properties";
+import { subscribeToProperties } from "../firebase/properties";
 
 const Properties = () => {
   const loading = usePageLoader();
@@ -33,9 +33,11 @@ const Properties = () => {
   const [amenities, setAmenities] = useState([]);
 
   useEffect(() => {
-    const loadProperties = async () => {
-      try {
-        const firebaseProperties = await getPropertiesFromFirebase();
+    // Realtime listener: fires again automatically whenever any property is
+    // added/edited/deleted anywhere, so the live site updates without a
+    // manual refresh.
+    const unsubscribe = subscribeToProperties(
+      (firebaseProperties) => {
         const firebaseKeys = new Set(
           firebaseProperties.map((property) => `${property.title}|${property.location}`),
         );
@@ -43,13 +45,11 @@ const Properties = () => {
           (property) => !firebaseKeys.has(`${property.title}|${property.location}`),
         );
         setAllProperties([...fallbackProperties, ...firebaseProperties]);
-      } catch (error) {
-        console.error("Failed to load Firebase properties", error);
-        setAllProperties(defaultProperties);
-      }
-    };
+      },
+      () => setAllProperties(defaultProperties),
+    );
 
-    loadProperties();
+    return () => unsubscribe();
   }, []);
 
   const propertiesPerPage = 6;

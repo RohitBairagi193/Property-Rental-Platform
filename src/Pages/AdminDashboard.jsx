@@ -25,8 +25,8 @@ import {
   addPropertyToFirebase,
   deletePropertyFromFirebase,
   deleteBookingFromFirebase,
-  getBookingsForPropertyOwner,
-  getPropertiesFromFirebase,
+  subscribeToBookingsForPropertyOwner,
+  subscribeToProperties,
   updatePropertyInFirebase,
   setPropertyAvailability,
   saveAdminPayoutDetails,
@@ -81,36 +81,45 @@ const AdminDashboard = () => {
       property.createdByEmail.trim().toLowerCase() ===
         (admin?.email || auth?.currentUser?.email || "").trim().toLowerCase());
 
-  const loadAllBookings = async (adminUid, adminEmail) => {
-    try {
-      setBookings(await getBookingsForPropertyOwner(adminUid, adminEmail));
-    } catch (error) {
-      console.error("Failed to load bookings", error);
-      setBookings([]);
-    }
-  };
-
   useEffect(() => {
-    const unsubscribe = subscribeToAuthState(async (savedAdmin) => {
+    // Cleanup handles for the realtime property/booking listeners so they
+    // can be stopped when the admin logs out or the component unmounts.
+    let unsubscribeProperties = () => {};
+    let unsubscribeBookings = () => {};
+
+    const unsubscribeAuth = subscribeToAuthState(async (savedAdmin) => {
+      unsubscribeProperties();
+      unsubscribeBookings();
+
       if (!savedAdmin || savedAdmin.role !== "Admin") {
         navigate("/login");
         return;
       }
 
       setAdmin(savedAdmin);
-
-      try {
-        const firebaseProperties = await getPropertiesFromFirebase();
-        setProperties(firebaseProperties.length > 0 ? firebaseProperties : defaultProperties);
-      } catch (error) {
-        setProperties(defaultProperties);
-      }
-
       setUsers([]);
-      await loadAllBookings(savedAdmin.uid, savedAdmin.email);
+
+      // Realtime listeners: the dashboard now updates live (no manual
+      // refresh) whenever a property or booking changes.
+      unsubscribeProperties = subscribeToProperties(
+        (firebaseProperties) => {
+          setProperties(firebaseProperties.length > 0 ? firebaseProperties : defaultProperties);
+        },
+        () => setProperties(defaultProperties),
+      );
+
+      unsubscribeBookings = subscribeToBookingsForPropertyOwner(
+        savedAdmin.uid,
+        savedAdmin.email,
+        setBookings,
+      );
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      unsubscribeProperties();
+      unsubscribeBookings();
+    };
   }, [navigate]);
 
   const handleLogout = async () => {

@@ -20,7 +20,7 @@ import {
 } from "../firebase/auth";
 import {
   deleteBookingFromFirebase,
-  getBookingsForUser,
+  subscribeToBookingsForUser,
   setPropertyAvailability,
 } from "../firebase/properties";
 
@@ -35,20 +35,6 @@ const UserDashboard = () => {
   const wishlist = useContext(MyContext).wishlist;
   const navigate = useNavigate();
 
-  const fetchUserBookings = async (uid) => {
-    if (!uid) {
-      setRecentBookings([]);
-      return;
-    }
-
-    try {
-      const bookings = await getBookingsForUser(uid);
-      setRecentBookings(bookings);
-    } catch (error) {
-      console.error("Failed to fetch bookings", error);
-      setRecentBookings([]);
-    }
-  };
   const showPopup = (message, type = "success") => {
     setPopupMessage(message);
     setPopupType(type);
@@ -73,28 +59,26 @@ const UserDashboard = () => {
   };
 
   useEffect(() => {
-    const handleBookingUpdate = () => {
-      if (user?.uid) {
-        fetchUserBookings(user.uid);
-      }
-    };
+    // Realtime listener for this user's bookings so the dashboard updates
+    // live (no manual refresh) as soon as a booking is added/cancelled.
+    let unsubscribeBookings = () => {};
 
-    window.addEventListener("ghardhundho-booking-updated", handleBookingUpdate);
+    const unsubscribeAuth = subscribeToAuthState((savedUser) => {
+      unsubscribeBookings();
 
-    const unsubscribe = subscribeToAuthState((savedUser) => {
       if (savedUser) {
         setUser(savedUser);
-        fetchUserBookings(savedUser.uid);
+        unsubscribeBookings = subscribeToBookingsForUser(savedUser.uid, setRecentBookings);
       } else {
         navigate("/login");
       }
     });
 
     return () => {
-      window.removeEventListener("ghardhundho-booking-updated", handleBookingUpdate);
-      unsubscribe();
+      unsubscribeAuth();
+      unsubscribeBookings();
     };
-  }, [navigate, user?.uid]);
+  }, [navigate]);
 
   const handleCancelBooking = async (bookingId) => {
     try {

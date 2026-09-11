@@ -20,8 +20,8 @@ import {
   addPropertyToFirebase,
   deleteBookingFromFirebase,
   deletePropertyFromFirebase,
-  getAllBookingsFromFirebase,
-  getPropertiesFromFirebase,
+  subscribeToAllBookings,
+  subscribeToProperties,
   updatePropertyInFirebase,
 } from "../firebase/properties";
 import { uploadPropertyImage } from "../supabase/storage";
@@ -72,21 +72,21 @@ const ServerDashbord = () => {
     }
 
     setServerUser(currentUser);
-    const loadFirebaseData = async () => {
-      try {
-        const [firebaseProperties, firebaseBookings] = await Promise.all([
-          getPropertiesFromFirebase(),
-          getAllBookingsFromFirebase(),
-        ]);
+
+    // Realtime listeners: dashboard updates live (no manual refresh) as
+    // soon as any property or booking changes anywhere.
+    const unsubscribeProperties = subscribeToProperties(
+      (firebaseProperties) => {
         setProperties(firebaseProperties.length > 0 ? firebaseProperties : defaultProperties);
-        setBookings(firebaseBookings);
-      } catch (error) {
-        console.error("Failed to load server data", error);
-        setProperties(defaultProperties);
-        setBookings([]);
-      }
+      },
+      () => setProperties(defaultProperties),
+    );
+    const unsubscribeBookings = subscribeToAllBookings(setBookings);
+
+    return () => {
+      unsubscribeProperties();
+      unsubscribeBookings();
     };
-    loadFirebaseData();
   }, [location.state, navigate]);
 
   const showPopup = (message, type = "success") => {
