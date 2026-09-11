@@ -25,7 +25,18 @@ service cloud.firestore {
       allow read: if true;
       allow create: if request.auth != null
         && request.resource.data.createdByUid == request.auth.uid;
-      allow update, delete: if request.auth != null
+
+      allow update: if request.auth != null
+        && (
+          resource.data.createdByUid == request.auth.uid
+          || request.auth.token.email == "rohitbairagi255@gmail.com"
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(["available"])
+            && request.resource.data.available == false
+          )
+        );
+
+      allow delete: if request.auth != null
         && (
           resource.data.createdByUid == request.auth.uid
           || request.auth.token.email == "rohitbairagi255@gmail.com"

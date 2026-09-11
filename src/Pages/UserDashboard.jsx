@@ -18,7 +18,11 @@ import {
   logoutUserWithFirebase,
   subscribeToAuthState,
 } from "../firebase/auth";
-import { deleteBookingFromFirebase, getBookingsForUser } from "../firebase/properties";
+import {
+  deleteBookingFromFirebase,
+  getBookingsForUser,
+  setPropertyAvailability,
+} from "../firebase/properties";
 
 const UserDashboard = () => {
   const loading = usePageLoader();
@@ -94,8 +98,20 @@ const UserDashboard = () => {
 
   const handleCancelBooking = async (bookingId) => {
     try {
+      const booking = recentBookings.find((item) => item.id === bookingId);
       await deleteBookingFromFirebase(bookingId);
-      const updated = recentBookings.filter((booking) => booking.id !== bookingId);
+
+      // Only a real "booking" removes the property from the market, so only
+      // a real booking's cancellation should put it back.
+      if (booking?.type === "booking" && booking?.propertyId) {
+        try {
+          await setPropertyAvailability(booking.propertyId, true);
+        } catch (availabilityError) {
+          console.error("Failed to restore property availability", availabilityError);
+        }
+      }
+
+      const updated = recentBookings.filter((item) => item.id !== bookingId);
       setRecentBookings(updated);
       window.dispatchEvent(new CustomEvent("ghardhundho-booking-updated", { detail: updated }));
       showPopup("Booking or Visit Cancelled Successfully", "success");

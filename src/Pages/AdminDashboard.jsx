@@ -28,6 +28,7 @@ import {
   getBookingsForPropertyOwner,
   getPropertiesFromFirebase,
   updatePropertyInFirebase,
+  setPropertyAvailability,
   saveAdminPayoutDetails,
 } from "../firebase/properties";
 import { uploadPropertyImage } from "../supabase/storage";
@@ -310,8 +311,18 @@ const AdminDashboard = () => {
 
   const handleCancelBooking = async (bookingId) => {
     try {
+      const booking = bookings.find((item) => item.id === bookingId);
       await deleteBookingFromFirebase(bookingId);
-      setBookings((prev) => prev.filter((booking) => booking.id !== bookingId));
+
+      if (booking?.type === "booking" && booking?.propertyId) {
+        try {
+          await setPropertyAvailability(booking.propertyId, true);
+        } catch (availabilityError) {
+          console.error("Failed to restore property availability", availabilityError);
+        }
+      }
+
+      setBookings((prev) => prev.filter((item) => item.id !== bookingId));
       showPopup("Booking Cancelled Successfully!", "success");
     } catch (error) {
       console.log(error);

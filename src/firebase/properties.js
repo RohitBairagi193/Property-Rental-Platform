@@ -24,7 +24,7 @@ const normalizeProperty = (property) => ({
     : typeof property.feats === "string"
       ? property.feats.split(",").map((item) => item.trim()).filter(Boolean)
       : ["2 BHK", "2 Bath", "1200 sq.ft"],
-  available: true,
+  available: property.available === false ? false : true,
   isLiked: Boolean(property.isLiked),
   description: property.description || "",
   amenities: Array.isArray(property.amenities)
@@ -82,6 +82,18 @@ export async function updatePropertyInFirebase(propertyId, propertyData) {
   const refToDoc = doc(db, "properties", propertyId);
   await updateDoc(refToDoc, normalizeProperty(propertyData));
   return { ...normalizeProperty(propertyData), id: propertyId };
+}
+
+// Lightweight helper that only flips the `available` flag, without touching
+// any other property field. This matches the Firestore rule that lets a
+// booking user mark a property unavailable/available without owning it.
+export async function setPropertyAvailability(propertyId, available) {
+  if (!isFirebaseConfigured || !db || !propertyId) {
+    return;
+  }
+
+  const refToDoc = doc(db, "properties", propertyId);
+  await updateDoc(refToDoc, { available: Boolean(available) });
 }
 
 export async function deletePropertyFromFirebase(propertyId) {

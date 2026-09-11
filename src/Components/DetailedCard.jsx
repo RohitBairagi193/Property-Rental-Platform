@@ -21,6 +21,7 @@ import { auth } from "../firebase/config";
 import {
   addBookingToFirebase,
   getPropertiesFromFirebase,
+  setPropertyAvailability,
 } from "../firebase/properties";
 
 const DetailedCard = ({ item }) => {
@@ -161,6 +162,16 @@ const DetailedCard = ({ item }) => {
 
    try {
      await addBookingToFirebase(bookingRecord);
+
+     // A "booking" (not a mere visit) takes the property off the market.
+     if (type === "booking" && firebaseProperty) {
+       try {
+         await setPropertyAvailability(firebaseProperty.id, false);
+       } catch (updateError) {
+         console.error("Failed to mark property as rented", updateError);
+       }
+     }
+
      window.dispatchEvent(new CustomEvent("ghardhundho-booking-updated", { detail: bookingRecord }));
      return true;
    } catch (error) {
