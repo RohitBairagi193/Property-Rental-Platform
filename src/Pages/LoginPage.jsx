@@ -156,7 +156,9 @@ const LoginPage = () => {
       }, 1000);
     } catch (error) {
       if (error.code === "account-exists-with-different-credential") {
-        
+        // Same email already has a password account. If the password
+        // field is already filled in, link the two accounts into one
+        // right away instead of making the user click Google again.
         if (password) {
           try {
             const user = await linkGoogleWithPassword(password, role);

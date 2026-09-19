@@ -72,7 +72,7 @@ const RegisterPage = () => {
       }, 1000);
     } catch (error) {
       if (error.code === "account-exists-with-different-credential") {
-  
+
         if (password) {
           try {
             const user = await linkGoogleWithPassword(password, role);

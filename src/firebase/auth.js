@@ -104,7 +104,6 @@ export async function loginUserWithFirebase({ email, password }) {
   );
 }
 
-
 let pendingGoogleCredential = null;
 let pendingGoogleEmail = null;
 
@@ -117,7 +116,7 @@ async function upsertGoogleProfile(user, role) {
       uid: user.uid,
       name: existingProfile.name || user.displayName || "User",
       email: user.email || "",
-     
+  
       role: existingProfile.role || role,
       photoURL: user.photoURL || existingProfile.photoURL || "",
     },
