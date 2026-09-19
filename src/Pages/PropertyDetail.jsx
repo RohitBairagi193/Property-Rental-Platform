@@ -44,18 +44,19 @@ const PropertyDetail = () => {
   if (!prop) {
     return (
       <div className="container-main px-gutter pt-40 text-center">
-        {" "}
-        <a
-          href="/"
-          className="text-md font-bold mb-4 ml-10 cursor-pointer align-middle gap-1">
-          <ArrowBigLeft className="inline" size={18} /> Back to Home
-        </a>
-        <a
-          href="/properties"
-          className="text-md font-bold mb-4 ml-290 cursor-pointer align-middle gap-1">
-          Back to listings
-          <ArrowBigRight className="inline" size={18} />
-        </a>
+        <div className="flex justify-between items-center gap-3 mb-4 px-2 md:px-10">
+          <a
+            href="/"
+            className="text-md font-bold cursor-pointer align-middle gap-1">
+            <ArrowBigLeft className="inline" size={18} /> Back to Home
+          </a>
+          <a
+            href="/properties"
+            className="text-md font-bold cursor-pointer align-middle gap-1">
+            Back to listings
+            <ArrowBigRight className="inline" size={18} />
+          </a>
+        </div>
         <p className="text-2xl font-bold">Property not found</p>
       </div>
     );

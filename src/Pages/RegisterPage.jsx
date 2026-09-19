@@ -75,7 +75,7 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface">
+    <div className="min-h-screen flex items-center justify-center bg-surface px-4 pt-24 pb-10 md:py-0">
       <NotificationPopup
         isOpen={popupOpen}
         message={popupMessage}
@@ -83,7 +83,7 @@ const RegisterPage = () => {
         onClose={() => setPopupOpen(false)}
       />
 
-      <div className="card w-112.5">
+      <div className="card w-full max-w-112.5">
         <h1 className="text-3xl font-bold mb-2">
           <Home className="inline mb-1" /> GharDhundho
         </h1>

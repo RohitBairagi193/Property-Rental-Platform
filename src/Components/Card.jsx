@@ -37,7 +37,7 @@ const removeFromWishlist = (id) => {
 
   return (
     <>
-      <div className="grid grid-cols-3 gap-6 px-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 px-0 sm:px-6">
         {properties.map((property, id) => (
           <div key={id} className="card p-0 group">
             <div className="relative h-50 overflow-hidden">
@@ -87,11 +87,11 @@ const removeFromWishlist = (id) => {
             </div>
 
             <div className="p-md">
-              <div className="flex justify-between items-start mb-1">
+              <div className="flex justify-between items-start gap-2 mb-1">
                 <span className="text-on-surface font-semibold text-body-md">
                   {property.title}
                 </span>
-                <span className="price">
+                <span className="price whitespace-nowrap shrink-0">
                   <IndianRupee className="inline" size={20} />
                   {property.price}
                 </span>

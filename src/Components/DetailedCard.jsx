@@ -230,18 +230,20 @@ const DetailedCard = ({ item }) => {
 
  return (
     <>
-      <div className="container-main px-gutter pt-5">
-        <a
-          href="/"
-          className="text-md font-bold mb-4 ml-10 cursor-pointer align-middle gap-1">
-          <ArrowBigLeft className="inline" size={18} /> Back to Home
-        </a>
-        <a
-          href="/properties"
-          className="text-md font-bold mb-4 ml-290 cursor-pointer align-middle gap-1">
-          Back to listings
-          <ArrowBigRight className="inline" size={18} />
-        </a>
+      <div className="container-main px-gutter pt-20">
+        <div className="flex justify-between items-center gap-3 mb-4 px-2 md:px-10">
+          <a
+            href="/"
+            className="text-md font-bold cursor-pointer align-middle gap-1">
+            <ArrowBigLeft className="inline" size={18} /> Back to Home
+          </a>
+          <a
+            href="/properties"
+            className="text-md font-bold cursor-pointer align-middle gap-1">
+            Back to listings
+            <ArrowBigRight className="inline" size={18} />
+          </a>
+        </div>
 
         <div className="bg-white rounded-lg shadow-md overflow-hidden py-3">
           {showPopup && (
@@ -303,10 +305,10 @@ const DetailedCard = ({ item }) => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-20 pt-3.5">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 md:px-10 xl:px-20 pt-3.5">
             <div className="lg:col-span-2">
               <div className="relative overflow-hidden rounded-lg">
-                <img src={item.image} className="w-full h-120 object-cover" />
+                <img src={item.image} className="w-full h-64 sm:h-80 lg:h-120 object-cover" />
                 <div className="absolute inset-0 bg-primary-blur" />
               </div>
 
@@ -354,7 +356,7 @@ const DetailedCard = ({ item }) => {
                 ))}
               </div>
 
-              <div className="card mt-8 flex justify-between items-center">
+              <div className="card mt-8 flex flex-wrap gap-4 justify-between items-center">
                 <div>
                   <h3>
                     <UserRound className="inline align-middle mb-2" size={24} />{" "}
@@ -369,7 +371,7 @@ const DetailedCard = ({ item }) => {
                 </button>
               </div>
             </div>
-            <div className="card w-96 h-fit relative">
+            <div className="card w-full lg:max-w-96 h-fit relative">
               <p className="label-caps pb-1">
                 {item.available ? (
                   <span className="absolute top-3 left-3 badge badge-primary">

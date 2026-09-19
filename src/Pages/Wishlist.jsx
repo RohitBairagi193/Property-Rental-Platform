@@ -16,7 +16,7 @@ const Wishlist = () => {
 
   return (
     <>
-      <div className="container-main bg-white pt-20 max-w-container-max mx-auto px-20">
+      <div className="container-main bg-white pt-20 max-w-container-max mx-auto px-4 md:px-10 xl:px-20">
         <div>
           <a
             href="/"
@@ -32,7 +32,7 @@ const Wishlist = () => {
         </div>
 
         <div className="flex items-end justify-between pt-5 mb-8">
-          <div className="px-6">
+          <div className="px-0 md:px-6">
             <h1 className="text-on-surface">My Wishlist</h1>
             <p className="text-on-surface-variant text-body-sm mt-1">
               Your saved properties for future reference

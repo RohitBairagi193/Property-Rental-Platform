@@ -15,10 +15,10 @@ const StatusBar = () => {
   return (
     <>
         <div className="container-main">
-          <div className=" items-center justify-evenly gap-8 h-full grid grid-cols-4 text-center divide-x divide-white/10">
+          <div className=" items-center justify-evenly gap-y-6 gap-x-4 md:gap-8 h-full grid grid-cols-2 md:grid-cols-4 text-center md:divide-x md:divide-white/10">
             {STATUS_DATA.map(({ num, label }) => (
-              <div key={label} className="px-6 py-2">
-                <div className="text-white font-serif text-h1 font-bold">
+              <div key={label} className="px-2 md:px-6 py-2">
+                <div className="text-white font-serif text-h2 md:text-h1 font-bold">
                   {num}
                 </div>
                 <div className="text-white/60 text-label-caps uppercase tracking-label-caps mt-1">

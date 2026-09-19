@@ -24,17 +24,17 @@ const SearchBar = () => {
 
   return (
     <>
-      <div className="relative z-9 flex flex-col items-center justify-center h-full px-6 text-center spacing-base">
+      <div className="relative z-9 flex flex-col items-center justify-center min-h-[inherit] lg:min-h-0 h-full px-4 sm:px-6 py-24 lg:py-0 text-center spacing-base">
         <h1 className="display-lg text-white max-w-4xl spacing-base mb-4">
           Find Your Perfect Home in India
         </h1>
 
-        <p className="text-white/80 text-body-md max-w-2xl mb-10 leading-body spacing-base">
+        <p className="text-white/80 text-body-md max-w-2xl mb-6 md:mb-10 leading-body spacing-base">
           Discover premium rentals and luxury properties tailored to your
           lifestyle across the nation's most vibrant cities.
         </p>
 
-        <div className="bg-white rounded-xl p-5 flex flex-col lg:flex-row items-end gap-4 w-full max-w-5xl shadow-modal">
+        <div className="bg-white rounded-xl p-4 sm:p-5 flex flex-col lg:flex-row items-end gap-4 w-full max-w-5xl shadow-modal">
           <div className="flex flex-col gap-1 flex-1 w-full">
             <label className="input-label text-left">City</label>
 

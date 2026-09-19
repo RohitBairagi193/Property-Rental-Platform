@@ -17,7 +17,7 @@ const NotificationPopup = ({ message, isOpen, onClose, type = "success" }) => {
   const isSuccess = type === "success";
 
   return (
-    <div className="fixed top-20 z-50">
+    <div className="fixed top-20 z-50 max-w-[calc(100vw-1rem)]">
       <div className="bg-white shadow-2xl rounded-2xl px-5 py-4 min-w-80 flex gap-3">
         <div className="w-14 h-14 flex items-center justify-center">
           {isSuccess ? (

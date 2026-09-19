@@ -25,8 +25,8 @@ import {
   addPropertyToFirebase,
   deletePropertyFromFirebase,
   deleteBookingFromFirebase,
-  subscribeToBookingsForPropertyOwner,
-  subscribeToProperties,
+  getBookingsForPropertyOwner,
+  getPropertiesFromFirebase,
   updatePropertyInFirebase,
   setPropertyAvailability,
   saveAdminPayoutDetails,
@@ -81,45 +81,36 @@ const AdminDashboard = () => {
       property.createdByEmail.trim().toLowerCase() ===
         (admin?.email || auth?.currentUser?.email || "").trim().toLowerCase());
 
+  const loadAllBookings = async (adminUid, adminEmail) => {
+    try {
+      setBookings(await getBookingsForPropertyOwner(adminUid, adminEmail));
+    } catch (error) {
+      console.error("Failed to load bookings", error);
+      setBookings([]);
+    }
+  };
+
   useEffect(() => {
-    // Cleanup handles for the realtime property/booking listeners so they
-    // can be stopped when the admin logs out or the component unmounts.
-    let unsubscribeProperties = () => {};
-    let unsubscribeBookings = () => {};
-
-    const unsubscribeAuth = subscribeToAuthState(async (savedAdmin) => {
-      unsubscribeProperties();
-      unsubscribeBookings();
-
+    const unsubscribe = subscribeToAuthState(async (savedAdmin) => {
       if (!savedAdmin || savedAdmin.role !== "Admin") {
         navigate("/login");
         return;
       }
 
       setAdmin(savedAdmin);
+
+      try {
+        const firebaseProperties = await getPropertiesFromFirebase();
+        setProperties(firebaseProperties.length > 0 ? firebaseProperties : defaultProperties);
+      } catch (error) {
+        setProperties(defaultProperties);
+      }
+
       setUsers([]);
-
-      // Realtime listeners: the dashboard now updates live (no manual
-      // refresh) whenever a property or booking changes.
-      unsubscribeProperties = subscribeToProperties(
-        (firebaseProperties) => {
-          setProperties(firebaseProperties.length > 0 ? firebaseProperties : defaultProperties);
-        },
-        () => setProperties(defaultProperties),
-      );
-
-      unsubscribeBookings = subscribeToBookingsForPropertyOwner(
-        savedAdmin.uid,
-        savedAdmin.email,
-        setBookings,
-      );
+      await loadAllBookings(savedAdmin.uid, savedAdmin.email);
     });
 
-    return () => {
-      unsubscribeAuth();
-      unsubscribeProperties();
-      unsubscribeBookings();
-    };
+    return () => unsubscribe();
   }, [navigate]);
 
   const handleLogout = async () => {
@@ -401,10 +392,10 @@ const AdminDashboard = () => {
         type={popupType}
         onClose={() => setPopupOpen(false)}
       />
-      <div className="min-h-screen flex bg-surface pt-16">
-        <div className="w-65 h-120 bg-primary-container text-white flex flex-col justify-between p-6 fixed mt-2">
+      <div className="min-h-screen flex flex-col md:flex-row bg-surface pt-16">
+        <div className="w-full md:w-65 md:h-120 bg-primary-container text-white flex flex-col justify-between gap-4 md:gap-0 p-4 md:p-6 md:fixed md:mt-2 z-10">
           <div>
-            <h2 className="display-lg text-white mb-8">GharDhundho</h2>
+            <h2 className="display-lg text-white mb-4 md:mb-8">GharDhundho</h2>
 
             <div className="mb-6">
               <h3 className="text-white">
@@ -414,12 +405,12 @@ const AdminDashboard = () => {
               <p className="text-on-primary-container text-body-sm">Admin</p>
             </div>
 
-            <nav className="flex flex-col gap-4 ">
+            <nav className="flex flex-row md:flex-col gap-2 md:gap-4 overflow-x-auto pb-2 md:pb-0">
               {navItems.map(({ label, icon }) => (
                 <span
                   key={label}
                   onClick={() => setActiveTab(label)}
-                  className={`nav-link cursor-pointer ${
+                  className={`nav-link cursor-pointer whitespace-nowrap ${
                     activeTab === label
                       ? "bg-white text-black rounded-lg px-3 py-2"
                       : "text-white"
@@ -435,10 +426,10 @@ const AdminDashboard = () => {
             Logout
           </button>
         </div>
-        <div className="flex-1 p-10 ">
+        <div className="flex-1 min-w-0 p-4 md:p-10">
           {activeTab === "Dashboard" && (
             <div
-            className=" ml-70">
+            className=" md:ml-70">
               <div className="mb-8">
                 <h1>Hello, {admin?.name || "Admin"}!</h1>
                 <p className="text-on-surface-variant text-body-sm">
@@ -446,7 +437,7 @@ const AdminDashboard = () => {
                 </p>
               </div>
 
-              <div className="grid grid-cols-4 gap-6 mb-10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-10">
                 <div className="card">
                   <p className="label-caps mb-2">Total Properties</p>
                   <h2>{properties.length}</h2>
@@ -464,9 +455,9 @@ const AdminDashboard = () => {
           )}
 
           {activeTab === "Properties" && (
-            <div className="ml-70">
+            <div className="md:ml-70">
               <h2 className="mb-6">All Properties</h2>
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {properties.length > 0 ? (
                   properties.map((property) => (
                     <div
@@ -522,7 +513,7 @@ const AdminDashboard = () => {
           )}
 
           {activeTab === "Bookings" && (
-            <div className="card ml-70">
+            <div className="card md:ml-70">
               <h2 className="mb-6">
                 All Bookings
                 <span className="badge badge-primary ml-3">
@@ -590,7 +581,7 @@ const AdminDashboard = () => {
             </div>
           )}
           {activeTab === "Add Property" && (
-            <div className="card max-w-2xl ml-70">
+            <div className="card max-w-2xl md:ml-70">
               <h2 className="mb-6">Add New Property</h2>
               <div className="space-y-4">
                 {[
@@ -690,7 +681,7 @@ const AdminDashboard = () => {
           )}
 
           {activeTab === "Bank Account" && (
-            <div className="card max-w-2xl ml-70">
+            <div className="card max-w-2xl md:ml-70">
               <h2 className="mb-2">Owner Bank Account</h2>
               <p className="text-sm text-on-surface-variant mb-6">
                 These payout details apply automatically to every property you add
@@ -727,7 +718,7 @@ const AdminDashboard = () => {
           )}
 
           {activeTab === "Notifications" && (
-            <div className="card ml-70">
+            <div className="card md:ml-70">
               <h2 className="mb-6">Notifications</h2>
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="text-green-500" />

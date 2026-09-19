@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import Card from "../Components/Card";
 import defaultProperties from "../assets/property";
 import Footer from "../Components/Footer";
 import { useLocation } from "react-router-dom";
 import PageLoader from "../Components/PageLoader";
 import usePageLoader from "../assets/usePageLoader";
-import { subscribeToProperties } from "../firebase/properties";
+import { getPropertiesFromFirebase } from "../firebase/properties";
 
 const Properties = () => {
   const loading = usePageLoader();
@@ -32,12 +32,12 @@ const Properties = () => {
 
   const [amenities, setAmenities] = useState([]);
 
+  const [showFilters, setShowFilters] = useState(false);
+
   useEffect(() => {
-    // Realtime listener: fires again automatically whenever any property is
-    // added/edited/deleted anywhere, so the live site updates without a
-    // manual refresh.
-    const unsubscribe = subscribeToProperties(
-      (firebaseProperties) => {
+    const loadProperties = async () => {
+      try {
+        const firebaseProperties = await getPropertiesFromFirebase();
         const firebaseKeys = new Set(
           firebaseProperties.map((property) => `${property.title}|${property.location}`),
         );
@@ -45,11 +45,13 @@ const Properties = () => {
           (property) => !firebaseKeys.has(`${property.title}|${property.location}`),
         );
         setAllProperties([...fallbackProperties, ...firebaseProperties]);
-      },
-      () => setAllProperties(defaultProperties),
-    );
+      } catch (error) {
+        console.error("Failed to load Firebase properties", error);
+        setAllProperties(defaultProperties);
+      }
+    };
 
-    return () => unsubscribe();
+    loadProperties();
   }, []);
 
   const propertiesPerPage = 6;
@@ -138,8 +140,19 @@ const Properties = () => {
 
   return (
     <>
-      <div className="container-main mx-auto px-lg pt-20 flex gap-8">
-        <div className="w-75 card h-fit sticky top-20">
+      <div className="container-main mx-auto px-4 md:px-lg pt-20 flex flex-col lg:flex-row gap-4 lg:gap-8">
+        <button
+          type="button"
+          onClick={() => setShowFilters((open) => !open)}
+          className="lg:hidden btn btn-tertiary w-full">
+          <SlidersHorizontal size={18} />
+          {showFilters ? "Hide Filters" : "Show Filters"}
+        </button>
+
+        <div
+          className={`${
+            showFilters ? "block" : "hidden"
+          } lg:block w-full lg:w-75 card h-fit lg:sticky lg:top-20`}>
           <h3 className="mb-4">Filters</h3>
 
           <div className="mb-4">
@@ -199,7 +212,7 @@ const Properties = () => {
             <p className="label-caps mb-2">BHK Type</p>
 
             <div className="flex gap-2 flex-wrap text-body-sm">
-              <div className="flex justify-center gap-2">
+              <div className="flex flex-wrap justify-center gap-2">
                 {bhkList.map((i) => (
                   <button
                     key={i}
@@ -245,8 +258,8 @@ const Properties = () => {
           </div>
         </div>
 
-        <div className="flex-1">
-          <div className="flex justify-between items-center mb-6">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
             <div>
               <h2>
                 {filteredProperties.length} Properties for{" "}
@@ -258,12 +271,12 @@ const Properties = () => {
               </p>
             </div>
 
-            <div className="flex items-center border px-3 py-2 rounded-md">
+            <div className="flex items-center border px-3 py-2 rounded-md w-full sm:w-auto">
               <Search size={16} />
 
               <input
                 placeholder="Search locality..."
-                className="ml-2 outline-none"
+                className="ml-2 outline-none w-full min-w-0"
                 value={searchLocal}
                 onChange={(e) => setSearchLocal(e.target.value)}
               />
@@ -272,7 +285,7 @@ const Properties = () => {
 
           <div className="flex justify-end mb-4">
             <select
-              className="input w-50"
+              className="input w-full sm:w-50"
               onChange={(e) => setSortOption(e.target.value)}>
               <option>Newest First</option>
               <option>Price Low to High</option>

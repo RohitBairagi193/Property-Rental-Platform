@@ -21,13 +21,13 @@ const Home = () => {
         <img
           src={images.luxury_indian_home}
           alt="Luxury Indian Home"
-          className="overflow-hidden absolute inset-0 w-full h-217.5 object-cover"
+          className="overflow-hidden absolute inset-0 w-full h-full object-cover"
         />
         <div className="overflow-hidden absolute inset-0 bg-primary-container/50 backdrop-blur-[1px]" />
         <SearchBar />
       </section>
 
-      <section className="bg-primary h-50 relative w-full py-8 align-middle justify-center flex">
+      <section className="bg-primary md:h-50 relative w-full py-8 align-middle justify-center flex">
         <StatusBar />
       </section>
 

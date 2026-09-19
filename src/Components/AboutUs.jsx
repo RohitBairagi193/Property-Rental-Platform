@@ -21,15 +21,15 @@ const CHOOSE_DATA = [
 const AboutUs = () => {
   return (
     <>
-      <div className="container-main text-center">
+      <div className="container-main text-center px-4 md:px-0">
         <h2 className="display-lg text-3xl text-on-surface mb-2">
           About GharDhundho
         </h2>
-        <p className="text-on-surface-variant text-body-sm mb-12">
+        <p className="text-on-surface-variant text-body-sm mb-8 md:mb-12">
           We redefine the rental experience with transparency and technology.
         </p>
 
-        <div className="grid grid-cols-3 gap-6 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
           {CHOOSE_DATA.map(({ icon, title, desc }) => (
             <div
               key={title}

@@ -20,7 +20,7 @@ import {
 } from "../firebase/auth";
 import {
   deleteBookingFromFirebase,
-  subscribeToBookingsForUser,
+  getBookingsForUser,
   setPropertyAvailability,
 } from "../firebase/properties";
 
@@ -35,6 +35,20 @@ const UserDashboard = () => {
   const wishlist = useContext(MyContext).wishlist;
   const navigate = useNavigate();
 
+  const fetchUserBookings = async (uid) => {
+    if (!uid) {
+      setRecentBookings([]);
+      return;
+    }
+
+    try {
+      const bookings = await getBookingsForUser(uid);
+      setRecentBookings(bookings);
+    } catch (error) {
+      console.error("Failed to fetch bookings", error);
+      setRecentBookings([]);
+    }
+  };
   const showPopup = (message, type = "success") => {
     setPopupMessage(message);
     setPopupType(type);
@@ -59,26 +73,28 @@ const UserDashboard = () => {
   };
 
   useEffect(() => {
-    // Realtime listener for this user's bookings so the dashboard updates
-    // live (no manual refresh) as soon as a booking is added/cancelled.
-    let unsubscribeBookings = () => {};
+    const handleBookingUpdate = () => {
+      if (user?.uid) {
+        fetchUserBookings(user.uid);
+      }
+    };
 
-    const unsubscribeAuth = subscribeToAuthState((savedUser) => {
-      unsubscribeBookings();
+    window.addEventListener("ghardhundho-booking-updated", handleBookingUpdate);
 
+    const unsubscribe = subscribeToAuthState((savedUser) => {
       if (savedUser) {
         setUser(savedUser);
-        unsubscribeBookings = subscribeToBookingsForUser(savedUser.uid, setRecentBookings);
+        fetchUserBookings(savedUser.uid);
       } else {
         navigate("/login");
       }
     });
 
     return () => {
-      unsubscribeAuth();
-      unsubscribeBookings();
+      window.removeEventListener("ghardhundho-booking-updated", handleBookingUpdate);
+      unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, user?.uid]);
 
   const handleCancelBooking = async (bookingId) => {
     try {
@@ -108,7 +124,7 @@ const UserDashboard = () => {
   if (loading || !user) return <PageLoader />;
 
   return (
-    <div className="min-h-screen flex bg-surface pt-16">
+    <div className="min-h-screen flex flex-col md:flex-row bg-surface pt-16">
       <NotificationPopup
         isOpen={popupOpen}
         message={popupMessage}
@@ -116,9 +132,9 @@ const UserDashboard = () => {
         onClose={() => setPopupOpen(false)}
       />
 
-      <div className="w-65 bg-primary-container text-white flex flex-col justify-between p-6">
+      <div className="w-full md:w-65 bg-primary-container text-white flex flex-col justify-between gap-4 md:gap-0 p-4 md:p-6">
         <div>
-          <h2 className="display-lg text-white mb-8">GharDhundho</h2>
+          <h2 className="display-lg text-white mb-4 md:mb-8">GharDhundho</h2>
 
           <div className="mb-6">
             <h3 className="text-white">
@@ -128,7 +144,7 @@ const UserDashboard = () => {
             <p className="text-on-primary-container text-body-sm">Tenant</p>
           </div>
 
-          <nav className="flex flex-col gap-4">
+          <nav className="flex flex-row md:flex-col gap-2 md:gap-4 overflow-x-auto pb-2 md:pb-0">
             {[
               {
                 label: "Dashboard",
@@ -158,7 +174,7 @@ const UserDashboard = () => {
               <span
                 key={label}
                 onClick={() => setActiveTab(label)}
-                className={`nav-link cursor-pointer ${
+                className={`nav-link cursor-pointer whitespace-nowrap ${
                   activeTab === label
                     ? "bg-white text-black rounded-lg px-3 py-2"
                     : "text-white"
@@ -174,7 +190,7 @@ const UserDashboard = () => {
         </button>
       </div>
 
-      <div className="flex-1 p-10">
+      <div className="flex-1 min-w-0 p-4 md:p-10">
         {activeTab === "Dashboard" && (
           <>
             <div className="mb-8">
@@ -185,7 +201,7 @@ const UserDashboard = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-6 mb-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
               <div className="card">
                 <p className="label-caps mb-2">Total Bookings</p>
 

@@ -20,8 +20,8 @@ import {
   addPropertyToFirebase,
   deleteBookingFromFirebase,
   deletePropertyFromFirebase,
-  subscribeToAllBookings,
-  subscribeToProperties,
+  getAllBookingsFromFirebase,
+  getPropertiesFromFirebase,
   updatePropertyInFirebase,
 } from "../firebase/properties";
 import { uploadPropertyImage } from "../supabase/storage";
@@ -72,21 +72,21 @@ const ServerDashbord = () => {
     }
 
     setServerUser(currentUser);
-
-    // Realtime listeners: dashboard updates live (no manual refresh) as
-    // soon as any property or booking changes anywhere.
-    const unsubscribeProperties = subscribeToProperties(
-      (firebaseProperties) => {
+    const loadFirebaseData = async () => {
+      try {
+        const [firebaseProperties, firebaseBookings] = await Promise.all([
+          getPropertiesFromFirebase(),
+          getAllBookingsFromFirebase(),
+        ]);
         setProperties(firebaseProperties.length > 0 ? firebaseProperties : defaultProperties);
-      },
-      () => setProperties(defaultProperties),
-    );
-    const unsubscribeBookings = subscribeToAllBookings(setBookings);
-
-    return () => {
-      unsubscribeProperties();
-      unsubscribeBookings();
+        setBookings(firebaseBookings);
+      } catch (error) {
+        console.error("Failed to load server data", error);
+        setProperties(defaultProperties);
+        setBookings([]);
+      }
     };
+    loadFirebaseData();
   }, [location.state, navigate]);
 
   const showPopup = (message, type = "success") => {
@@ -272,10 +272,10 @@ const ServerDashbord = () => {
         onClose={() => setPopupOpen(false)}
       />
 
-      <div className="min-h-screen flex bg-surface pt-16">
-        <div className="w-65 h-120 bg-primary-container text-white flex flex-col justify-between p-6 fixed mt-2">
+      <div className="min-h-screen flex flex-col md:flex-row bg-surface pt-16">
+        <div className="w-full md:w-65 md:h-120 bg-primary-container text-white flex flex-col justify-between gap-4 md:gap-0 p-4 md:p-6 md:fixed md:mt-2 z-10">
           <div>
-            <h2 className="display-lg text-white mb-8">GharDhundho</h2>
+            <h2 className="display-lg text-white mb-4 md:mb-8">GharDhundho</h2>
 
             <div className="mb-6">
               <h3 className="text-white">
@@ -284,12 +284,12 @@ const ServerDashbord = () => {
               <p className="text-on-primary-container text-body-sm">Server Admin</p>
             </div>
 
-            <nav className="flex flex-col gap-4">
+            <nav className="flex flex-row md:flex-col gap-2 md:gap-4 overflow-x-auto pb-2 md:pb-0">
               {navItems.map(({ label, icon }) => (
                 <span
                   key={label}
                   onClick={() => setActiveTab(label)}
-                  className={`nav-link cursor-pointer ${
+                  className={`nav-link cursor-pointer whitespace-nowrap ${
                     activeTab === label
                       ? "bg-white text-black rounded-lg px-3 py-2"
                       : "text-white"
@@ -306,9 +306,9 @@ const ServerDashbord = () => {
           </button>
         </div>
 
-        <div className="flex-1 p-10">
+        <div className="flex-1 min-w-0 p-4 md:p-10">
           {activeTab === "Dashboard" && (
-            <div className="ml-70">
+            <div className="md:ml-70">
               <div className="mb-8">
                 <h1>Hello, {serverUser.name}!</h1>
                 <p className="text-on-surface-variant text-body-sm">
@@ -316,7 +316,7 @@ const ServerDashbord = () => {
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-6 mb-10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
                 <div className="card">
                   <p className="label-caps mb-2">Total Properties</p>
                   <h2>{properties.length}</h2>
@@ -334,9 +334,9 @@ const ServerDashbord = () => {
           )}
 
           {activeTab === "Properties" && (
-            <div className="ml-70">
+            <div className="md:ml-70">
               <h2 className="mb-6">Server Property Controls</h2>
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {properties.map((property) => (
                   <div key={property.id} className="card rounded-2xl overflow-hidden">
                     <img
@@ -374,7 +374,7 @@ const ServerDashbord = () => {
           )}
 
           {activeTab === "Bookings" && (
-            <div className="card ml-70">
+            <div className="card md:ml-70">
               <h2 className="mb-6">All Bookings</h2>
 
               {bookings.length > 0 ? (
@@ -407,7 +407,7 @@ const ServerDashbord = () => {
           )}
 
           {activeTab === "Add Property" && (
-            <div className="card max-w-2xl ml-70">
+            <div className="card max-w-2xl md:ml-70">
               <h2 className="mb-6">Add New Property</h2>
               <div className="space-y-4">
                 {[
@@ -505,7 +505,7 @@ const ServerDashbord = () => {
           )}
 
           {activeTab === "Notifications" && (
-            <div className="card ml-70">
+            <div className="card md:ml-70">
               <h2 className="mb-6">Server Notifications</h2>
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="text-green-500" />

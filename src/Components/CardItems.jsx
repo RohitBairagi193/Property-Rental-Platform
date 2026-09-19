@@ -17,7 +17,7 @@ const CardItems = ({ wishlist }) => {
   };
   return (
     <>
-      <div className="grid grid-cols-3 gap-6 px-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 px-0 sm:px-6">
         {Object.keys(wishlist).length === 0 ? (
           <p className="text-2xl font-bold ">No items in wishlist</p>
         ) : (
@@ -55,11 +55,11 @@ const CardItems = ({ wishlist }) => {
               </div>
 
               <div className="p-md">
-                <div className="flex justify-between items-start mb-1">
+                <div className="flex justify-between items-start gap-2 mb-1">
                   <span className="text-on-surface font-semibold text-body-md">
                     {prop.title}
                   </span>
-                  <span className="price">
+                  <span className="price whitespace-nowrap shrink-0">
                     <IndianRupee className="inline" size={20} />
                     {prop.price}
                   </span>

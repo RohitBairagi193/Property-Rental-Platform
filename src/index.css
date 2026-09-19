@@ -336,8 +336,13 @@
 
   /* ---- SECTION ---- */
   .section {
-width: 100%;
-height: 870px;
+    width: 100%;
+    min-height: 560px;
+  }
+  @media (min-width: 1024px) {
+    .section {
+      height: 870px;
+    }
   }
 
   /* ---- CONTAINER — 1604.4px fixed ---- */
