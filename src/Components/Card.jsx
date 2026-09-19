@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useContext } from "react";
 import { Heart, MapPin, Bed, Bath, Maximize2, IndianRupee } from "lucide-react";
 import Wishlist from "../Pages/Wishlist";
 import { MyContext } from "../Context/MyContextProvder";
@@ -6,25 +6,26 @@ import { DetailedProperty } from "../Context/DetailedProperty";
 import { useNavigate } from "react-router-dom";
 
 const Card = ({ properties }) => {
-  const [isLiked, setIsLiked] = useState([]);
   const { wishlist, setWishlist } = useContext(MyContext);
   const { detailproperty, setDetailProperty } = useContext(DetailedProperty);
   const navigate = useNavigate();
 
+  const isWishlisted = (propertyId) =>
+    (wishlist || []).some((item) => item.id === propertyId);
+
   const addToWishlist = (property) => {
-    setWishlist(wishlist ? [...wishlist, property] : [property]);
+    setWishlist((prev) => {
+      const current = prev || [];
+    
+      if (current.some((item) => item.id === property.id)) return current;
+      return [...current, property];
+    });
     console.log("Added to wishlist:", property);
   };
 
-const removeFromWishlist = (id) => {
+  const removeFromWishlist = (id) => {
     setWishlist((prev) => prev.filter((item) => item.id !== id));
     console.log("Removed from wishlist, ID:", id);
-  };
-
-  const toggleLike = (id) => {
-    setIsLiked((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
   };
 
   const viewDetails = (property) => {
@@ -37,9 +38,9 @@ const removeFromWishlist = (id) => {
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 px-0 sm:px-6">
-        {properties.map((property, id) => (
-          <div key={id} className="card p-0 group">
+      <div className="grid grid-cols-3 gap-6 px-6">
+        {properties.map((property) => (
+          <div key={property.id} className="card p-0 group">
             <div className="relative h-50 overflow-hidden">
               <div className="w-full h-full curson-zoom-in bg-surface-container flex items-center justify-center text-5xl">
                 <img
@@ -62,16 +63,14 @@ const removeFromWishlist = (id) => {
 
               <button
                 onClick={() => {
-                  if (isLiked.includes(id)) {
-                    toggleLike(id);
+                  if (isWishlisted(property.id)) {
                     removeFromWishlist(property.id);
                   } else {
-                    toggleLike(id);
                     addToWishlist(property);
                   }
                 }}
                 className="absolute top-3 cursor-pointer right-3 bg-white rounded-full w-8 h-8 flex items-center justify-center text-sm shadow-btn">
-                {isLiked.includes(id) === true ? (
+                {isWishlisted(property.id) ? (
                   <Heart
 
                     size={14}
@@ -87,11 +86,11 @@ const removeFromWishlist = (id) => {
             </div>
 
             <div className="p-md">
-              <div className="flex justify-between items-start gap-2 mb-1">
+              <div className="flex justify-between items-start mb-1">
                 <span className="text-on-surface font-semibold text-body-md">
                   {property.title}
                 </span>
-                <span className="price whitespace-nowrap shrink-0">
+                <span className="price">
                   <IndianRupee className="inline" size={20} />
                   {property.price}
                 </span>

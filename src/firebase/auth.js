@@ -1,6 +1,8 @@
 import {
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
   GoogleAuthProvider,
+  linkWithCredential,
   onAuthStateChanged,
   sendEmailVerification,
   signInWithPopup,
@@ -102,29 +104,72 @@ export async function loginUserWithFirebase({ email, password }) {
   );
 }
 
+
+let pendingGoogleCredential = null;
+let pendingGoogleEmail = null;
+
+async function upsertGoogleProfile(user, role) {
+  const userDoc = await getDoc(doc(db, "users", user.uid));
+  const existingProfile = userDoc.exists() ? userDoc.data() : {};
+  const profile = normalizeUserProfile(
+    {
+      ...existingProfile,
+      uid: user.uid,
+      name: existingProfile.name || user.displayName || "User",
+      email: user.email || "",
+     
+      role: existingProfile.role || role,
+      photoURL: user.photoURL || existingProfile.photoURL || "",
+    },
+    role,
+  );
+
+  await setDoc(doc(db, "users", user.uid), profile, { merge: true });
+  return profile;
+}
+
 export async function signInWithGoogleWithFirebase(role = "Tenant") {
   if (!isFirebaseConfigured || !auth || !db) {
     throw new Error("Firebase is not configured yet.");
   }
 
   const provider = new GoogleAuthProvider();
-  const credential = await signInWithPopup(auth, provider);
-  const userDoc = await getDoc(doc(db, "users", credential.user.uid));
-  const existingProfile = userDoc.exists() ? userDoc.data() : {};
-  const profile = normalizeUserProfile(
-    {
-      ...existingProfile,
-      uid: credential.user.uid,
-      name: existingProfile.name || credential.user.displayName || "User",
-      email: credential.user.email || "",
-      role: existingProfile.role || role,
-      photoURL: credential.user.photoURL || existingProfile.photoURL || "",
-    },
-    role,
-  );
 
-  await setDoc(doc(db, "users", credential.user.uid), profile, { merge: true });
-  return profile;
+  try {
+    const credential = await signInWithPopup(auth, provider);
+    return await upsertGoogleProfile(credential.user, role);
+  } catch (error) {
+    if (error.code === "auth/account-exists-with-different-credential") {
+    
+      pendingGoogleCredential = GoogleAuthProvider.credentialFromError(error);
+      pendingGoogleEmail = error.customData?.email || "";
+      const linkError = new Error(
+        "This email already has a password account. Enter your password to link it with Google.",
+      );
+      linkError.code = "account-exists-with-different-credential";
+      linkError.email = pendingGoogleEmail;
+      throw linkError;
+    }
+    throw error;
+  }
+}
+
+
+export async function linkGoogleWithPassword(password, role = "Tenant") {
+  if (!isFirebaseConfigured || !auth || !db) {
+    throw new Error("Firebase is not configured yet.");
+  }
+  if (!pendingGoogleCredential || !pendingGoogleEmail) {
+    throw new Error("No pending Google sign-in to link. Please try Google sign-in again.");
+  }
+
+  const credential = await signInWithEmailAndPassword(auth, pendingGoogleEmail, password);
+  const linkedCredential = await linkWithCredential(credential.user, pendingGoogleCredential);
+
+  pendingGoogleCredential = null;
+  pendingGoogleEmail = null;
+
+  return upsertGoogleProfile(linkedCredential.user, role);
 }
 
 export async function logoutUserWithFirebase() {

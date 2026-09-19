@@ -4,8 +4,7 @@ import { subscribeToProperties } from "../firebase/properties";
 
 const propertyKey = (property) => `${property.title}|${property.location}`;
 
-// Same merge the Properties page uses: static listings + Firebase listings,
-// with duplicates (same title + location) removed.
+
 const mergeProperties = (firebaseProperties) => {
   const firebaseKeys = new Set(firebaseProperties.map(propertyKey));
   return [
@@ -16,8 +15,6 @@ const mergeProperties = (firebaseProperties) => {
   ];
 };
 
-// Location is "Area, City" (or just "City"). Cities are compared
-// case-insensitively, so "indore" and "Indore" count once.
 const countCities = (properties) => {
   const cities = new Set();
   properties.forEach(({ location }) => {
@@ -32,12 +29,11 @@ const countCities = (properties) => {
 };
 
 const StatusBar = () => {
-  // null = still loading, so we show "—" instead of a misleading 0.
+ 
   const [properties, setProperties] = useState(null);
 
   useEffect(() => {
-    // Live listener: the numbers update by themselves when a property is
-    // added, edited or deleted, and stop listening when the component unmounts.
+    
     const unsubscribe = subscribeToProperties(
       (list) => setProperties(mergeProperties(list)),
       () => setProperties(defaultProperties),
@@ -46,8 +42,8 @@ const StatusBar = () => {
   }, []);
 
   const STATUS_DATA = [
-    { num: properties ? properties.length : "—", label: "Total Properties" },
-    { num: properties ? countCities(properties) : "—", label: "Cities" },
+    { num: properties ? properties.length : "*", label: "Total Properties" },
+    { num: properties ? countCities(properties) : "*", label: "Cities" },
     { num: "10k+", label: "Happy Tenants" },
     { num: "4.8/5", label: "Average Rating" },
   ];

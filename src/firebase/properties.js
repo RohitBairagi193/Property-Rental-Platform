@@ -95,8 +95,7 @@ export function subscribeToProperties(onChange, onError) {
 
   const handleError = (error) => {
     console.error("Realtime property listener failed; falling back to ordering-free listener", error);
-    // If the ordered query fails (e.g. missing index), fall back to an
-    // unordered live listener instead of giving up on realtime updates.
+  
     return onSnapshot(propertiesRef(), handleSnapshot, (fallbackError) => {
       console.error("Realtime property listener failed", fallbackError);
       if (onError) onError(fallbackError);
@@ -124,9 +123,7 @@ export async function updatePropertyInFirebase(propertyId, propertyData) {
   return { ...normalizeProperty(propertyData), id: propertyId };
 }
 
-// Lightweight helper that only flips the `available` flag, without touching
-// any other property field. This matches the Firestore rule that lets a
-// booking user mark a property unavailable/available without owning it.
+
 export async function setPropertyAvailability(propertyId, available) {
   if (!isFirebaseConfigured || !db || !propertyId) {
     return;
@@ -179,7 +176,7 @@ export async function getBookingsForUser(userId) {
     .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
 }
 
-// Real-time listener for a single user's bookings (UserDashboard).
+
 export function subscribeToBookingsForUser(userId, onChange) {
   if (!isFirebaseConfigured || !db || !userId) {
     onChange([]);
@@ -204,7 +201,6 @@ export function subscribeToBookingsForUser(userId, onChange) {
   return unsubscribe;
 }
 
-// Real-time listener for ALL bookings (ServerDashboard / super-admin view).
 export function subscribeToAllBookings(onChange) {
   if (!isFirebaseConfigured || !db) {
     onChange([]);
@@ -225,9 +221,6 @@ export function subscribeToAllBookings(onChange) {
   return unsubscribe;
 }
 
-// Real-time listener for bookings that belong to a property owner's listings
-// (AdminDashboard). Mirrors getBookingsForPropertyOwner's multi-query merge,
-// but keeps each query live instead of fetching once.
 export function subscribeToBookingsForPropertyOwner(userId, userEmail, onChange) {
   if (!isFirebaseConfigured || !db || !userId) {
     onChange([]);

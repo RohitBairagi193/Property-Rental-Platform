@@ -101,8 +101,7 @@ const UserDashboard = () => {
       const booking = recentBookings.find((item) => item.id === bookingId);
       await deleteBookingFromFirebase(bookingId);
 
-      // Only a real "booking" removes the property from the market, so only
-      // a real booking's cancellation should put it back.
+     
       if (booking?.type === "booking" && booking?.propertyId) {
         try {
           await setPropertyAvailability(booking.propertyId, true);

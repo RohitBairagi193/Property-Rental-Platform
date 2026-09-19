@@ -37,7 +37,7 @@ const Properties = () => {
   useEffect(() => {
     const propertyKey = (property) => `${property.title}|${property.location}`;
 
-    // Static listings + Firebase listings, duplicates (same title + location) removed.
+   
     const mergeWithDefaults = (firebaseProperties) => {
       const firebaseKeys = new Set(firebaseProperties.map(propertyKey));
       return [
@@ -48,8 +48,7 @@ const Properties = () => {
       ];
     };
 
-    // Live listener: the list updates by itself when a property is added,
-    // edited or deleted. Returned function stops listening on unmount.
+
     const unsubscribe = subscribeToProperties(
       (firebaseProperties) =>
         setAllProperties(mergeWithDefaults(firebaseProperties)),
@@ -139,8 +138,7 @@ const Properties = () => {
 
   const totalPages = Math.ceil(filteredProperties.length / propertiesPerPage);
 
-  // If a live update shrinks the list (e.g. the last property on the final page
-  // is deleted), move back to the last valid page instead of showing an empty one.
+
   useEffect(() => {
     if (totalPages > 0 && currentPage > totalPages) {
       setCurrentPage(totalPages);

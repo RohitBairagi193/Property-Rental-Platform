@@ -5,6 +5,7 @@ import NotificationPopup from "../Components/NotificationPopup";
 import {
   registerUserWithFirebase,
   signInWithGoogleWithFirebase,
+  linkGoogleWithPassword,
 } from "../firebase/auth";
 
 const RegisterPage = () => {
@@ -70,12 +71,37 @@ const RegisterPage = () => {
         navigate(role === "Admin" && user.role === "Admin" ? "/adminDashboard" : "/userDashboard");
       }, 1000);
     } catch (error) {
+      if (error.code === "account-exists-with-different-credential") {
+  
+        if (password) {
+          try {
+            const user = await linkGoogleWithPassword(password, role);
+            showPopup("Accounts linked — you're logged in", "success");
+            setTimeout(() => {
+              navigate(user.role === "Admin" ? "/adminDashboard" : "/userDashboard");
+            }, 1000);
+          } catch (linkError) {
+            showPopup(
+              linkError.message || "Could not link accounts. Check your password and try again.",
+              "error",
+            );
+          }
+          return;
+        }
+
+        showPopup(
+          "This email already has a password account. Enter that password above, then click Google again to link them.",
+          "error",
+        );
+        return;
+      }
+
       showPopup(error.message || "Google registration failed", "error");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface px-4 pt-24 pb-10 md:py-0">
+    <div className="min-h-screen flex items-center justify-center bg-surface">
       <NotificationPopup
         isOpen={popupOpen}
         message={popupMessage}
@@ -83,7 +109,7 @@ const RegisterPage = () => {
         onClose={() => setPopupOpen(false)}
       />
 
-      <div className="card w-full max-w-112.5">
+      <div className="card w-112.5">
         <h1 className="text-3xl font-bold mb-2">
           <Home className="inline mb-1" /> GharDhundho
         </h1>

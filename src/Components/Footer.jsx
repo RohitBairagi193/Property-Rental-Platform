@@ -28,7 +28,7 @@ const Footer = () => {
         </div>
 
         <div className="container-main px-6 mt-10 lg:mt-60 text-center text-sm text-on-surface-variant">
-          © 2024 GHARDHUNDHO. ALL RIGHTS RESERVED.
+          © 2026 GHARDHUNDHO. ALL RIGHTS RESERVED.
         </div>
       </footer>
     </>

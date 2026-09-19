@@ -163,7 +163,7 @@ const DetailedCard = ({ item }) => {
    try {
      await addBookingToFirebase(bookingRecord);
 
-     // A "booking" (not a mere visit) takes the property off the market.
+   
      if (type === "booking" && firebaseProperty) {
        try {
          await setPropertyAvailability(firebaseProperty.id, false);
