@@ -6,7 +6,7 @@ import Footer from "../Components/Footer";
 import { useLocation } from "react-router-dom";
 import PageLoader from "../Components/PageLoader";
 import usePageLoader from "../assets/usePageLoader";
-import { getPropertiesFromFirebase } from "../firebase/properties";
+import { subscribeToProperties } from "../firebase/properties";
 
 const Properties = () => {
   const loading = usePageLoader();
@@ -35,23 +35,28 @@ const Properties = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    const loadProperties = async () => {
-      try {
-        const firebaseProperties = await getPropertiesFromFirebase();
-        const firebaseKeys = new Set(
-          firebaseProperties.map((property) => `${property.title}|${property.location}`),
-        );
-        const fallbackProperties = defaultProperties.filter(
-          (property) => !firebaseKeys.has(`${property.title}|${property.location}`),
-        );
-        setAllProperties([...fallbackProperties, ...firebaseProperties]);
-      } catch (error) {
-        console.error("Failed to load Firebase properties", error);
-        setAllProperties(defaultProperties);
-      }
+    const propertyKey = (property) => `${property.title}|${property.location}`;
+
+    // Static listings + Firebase listings, duplicates (same title + location) removed.
+    const mergeWithDefaults = (firebaseProperties) => {
+      const firebaseKeys = new Set(firebaseProperties.map(propertyKey));
+      return [
+        ...defaultProperties.filter(
+          (property) => !firebaseKeys.has(propertyKey(property)),
+        ),
+        ...firebaseProperties,
+      ];
     };
 
-    loadProperties();
+    // Live listener: the list updates by itself when a property is added,
+    // edited or deleted. Returned function stops listening on unmount.
+    const unsubscribe = subscribeToProperties(
+      (firebaseProperties) =>
+        setAllProperties(mergeWithDefaults(firebaseProperties)),
+      () => setAllProperties(defaultProperties),
+    );
+
+    return unsubscribe;
   }, []);
 
   const propertiesPerPage = 6;
@@ -133,6 +138,14 @@ const Properties = () => {
   );
 
   const totalPages = Math.ceil(filteredProperties.length / propertiesPerPage);
+
+  // If a live update shrinks the list (e.g. the last property on the final page
+  // is deleted), move back to the last valid page instead of showing an empty one.
+  useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
 
   if (loading) {
     return <PageLoader />;
