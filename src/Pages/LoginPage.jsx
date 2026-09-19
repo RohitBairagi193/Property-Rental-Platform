@@ -156,9 +156,7 @@ const LoginPage = () => {
       }, 1000);
     } catch (error) {
       if (error.code === "account-exists-with-different-credential") {
-        // Same email already has a password account. If the password
-        // field is already filled in, link the two accounts into one
-        // right away instead of making the user click Google again.
+       
         if (password) {
           try {
             const user = await linkGoogleWithPassword(password, role);
@@ -203,7 +201,7 @@ const LoginPage = () => {
           type={popupType}
           onClose={() => setPopupOpen(false)}
         />
-        <div className="w-1/2 bg-primary-container text-white flex flex-col justify-center px-16">
+        <div className="hidden lg:flex lg:w-1/2 bg-primary-container text-white flex-col justify-center px-16">
           <h1 className="display-lg mb-4 text-white">
             <Home className="inline mb-1" size={35} /> GharDhundho
           </h1>
@@ -257,8 +255,8 @@ const LoginPage = () => {
           </div>
         </div>
 
-        <div className="w-1/2 flex items-center justify-center bg-surface">
-          <div className="card w-105">
+        <div className="w-full lg:w-1/2 flex items-center justify-center bg-surface px-4 py-10">
+          <div className="card w-full max-w-105">
             <h2 className="mb-2">Welcome Back</h2>
 
             <p className="text-body-sm text-on-surface-variant mb-6">

@@ -17,7 +17,7 @@ const CardItems = ({ wishlist }) => {
   };
   return (
     <>
-      <div className="grid grid-cols-3 gap-6 px-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 px-4 md:px-6">
         {Object.keys(wishlist).length === 0 ? (
           <p className="text-2xl font-bold ">No items in wishlist</p>
         ) : (
